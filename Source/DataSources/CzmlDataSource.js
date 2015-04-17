@@ -6,6 +6,7 @@ define([
         '../Core/ClockRange',
         '../Core/ClockStep',
         '../Core/Color',
+        '../Core/CornerType',
         '../Core/createGuid',
         '../Core/defaultValue',
         '../Core/defined',
@@ -58,6 +59,7 @@ define([
         './PolylineGlowMaterialProperty',
         './PolylineGraphics',
         './PolylineOutlineMaterialProperty',
+        './CorridorGraphics',
         './PositionPropertyArray',
         './RectangleGraphics',
         './ReferenceProperty',
@@ -75,6 +77,7 @@ define([
         ClockRange,
         ClockStep,
         Color,
+        CornerType,
         createGuid,
         defaultValue,
         defined,
@@ -127,6 +130,7 @@ define([
         PolylineGlowMaterialProperty,
         PolylineGraphics,
         PolylineOutlineMaterialProperty,
+        CorridorGraphics,
         PositionPropertyArray,
         RectangleGraphics,
         ReferenceProperty,
@@ -374,6 +378,8 @@ define([
             return unwrapUriInterval(czmlInterval, sourceUri);
         case VerticalOrigin:
             return VerticalOrigin[defaultValue(czmlInterval.verticalOrigin, czmlInterval)];
+        case CornerType:
+            return CornerType[defaultValue(czmlInterval.cornerType, czmlInterval)];
         default:
             throw new RuntimeError(type);
         }
@@ -1347,6 +1353,38 @@ define([
         processPositions(polyline, 'positions', polylineData.positions, entityCollection);
     }
 
+    function processCorridor(entity, packet, entityCollection, sourceUri) {
+        var corridorData = packet.corridor;
+        if (!defined(corridorData)) {
+            return;
+        }
+
+        var interval;
+        var intervalString = corridorData.interval;
+        if (defined(intervalString)) {
+            iso8601Scratch.iso8601 = intervalString;
+            interval = TimeInterval.fromIso8601(iso8601Scratch);
+        }
+
+        var corridor = entity.corridor;
+        if (!defined(corridor)) {
+            entity.corridor = corridor = new CorridorGraphics();
+        }
+
+        processPacketData(Number, corridor, 'width', corridorData.width, interval, sourceUri, entityCollection);
+        processPacketData(Number, corridor, 'height', corridorData.height, interval, sourceUri, entityCollection);
+        processPacketData(Number, corridor, 'extrudedHeight', corridorData.extrudedHeight, interval, sourceUri, entityCollection);
+        processPacketData(CornerType, corridor, 'cornerType', corridorData.cornerType, interval, sourceUri, entityCollection);
+        processPacketData(Boolean, corridor, 'show', corridorData.show, interval, sourceUri, entityCollection);
+        processPacketData(Boolean, corridor, 'fill', corridorData.fill, interval, sourceUri, entityCollection);
+        processMaterialPacketData(corridor, 'material', corridorData.material, interval, sourceUri, entityCollection);
+        processPacketData(Boolean, corridor, 'outline', corridorData.outline, interval, sourceUri, entityCollection);
+        processPacketData(Color, corridor, 'outlineColor', corridorData.outlineColor, interval, sourceUri, entityCollection);
+        processPacketData(Number, corridor, 'outlineWidth', corridorData.outlineWidth, interval, sourceUri, entityCollection);
+        processPacketData(Number, corridor, 'granularity', corridorData.granularity, interval, sourceUri, entityCollection);
+        processPositions(corridor, 'positions', corridorData.positions, entityCollection);
+    }
+
     function processCzmlPacket(packet, entityCollection, updaterFunctions, sourceUri, dataSource) {
         var objectId = packet.id;
         if (!defined(objectId)) {
@@ -1632,6 +1670,7 @@ define([
     processPoint, //
     processPolygon, //
     processPolyline, //
+    processCorridor, //
     processRectangle, //
     processPosition, //
     processViewFrom, //
